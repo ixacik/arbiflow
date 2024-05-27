@@ -1,7 +1,6 @@
 import mongoose, { type InferSchemaType } from "mongoose";
 
 const matchSchema = new mongoose.Schema({
-  id: { type: String, required: true },
   bookmaker: { type: String, required: true },
   team1: { type: String, required: true },
   team2: { type: String, required: true },

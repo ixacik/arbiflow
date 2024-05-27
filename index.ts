@@ -13,7 +13,7 @@ puppeteer.use(StealthPlugin());
 
 app.get("/live/tipsport", async (req, res) => {
   try {
-    const matches = [] as MatchType[];
+    const matches: MatchType[] = [];
 
     const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
@@ -32,17 +32,13 @@ app.get("/live/tipsport", async (req, res) => {
 
       // Select all match rows
       $(".LiveOverviewMatchstyled__MatchRow-sc-oy8wyv-1").each((_, element) => {
-        const match = {} as MatchType;
-
-        match.bookmaker = "tipsport";
+        const bookmaker = "tipsport";
 
         const teamsText = $(element)
           .find(".LiveOverviewMatchstyled__MatchName-sc-oy8wyv-4 span")
           .text();
         const [team1, team2] = teamsText.split(" - ");
-        match.team1 = team1?.toLowerCase().trim();
-        match.team2 = team2?.toLowerCase().trim();
-        if (!match.team1 || !match.team2) return;
+        if (!team1 || !team2) return;
 
         const odds = [] as string[];
         $(element)
@@ -59,9 +55,15 @@ app.get("/live/tipsport", async (req, res) => {
                 else odds.push(text);
               });
           });
-        match.odds1 = Number(odds[0]) || null;
-        match.oddsTie = Number(odds[1]) || null;
-        match.odds2 = Number(odds[2]) || null;
+
+        const match: MatchType = {
+          bookmaker,
+          team1,
+          team2,
+          odds1: Number(odds[0]) || null,
+          oddsTie: Number(odds[1]) || null,
+          odds2: Number(odds[2]) || null,
+        };
 
         if (match.oddsTie || match.odds1 || match.odds1) matches.push(match);
       });
