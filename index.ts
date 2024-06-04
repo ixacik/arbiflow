@@ -1,9 +1,8 @@
 import express from "express";
-import { type MatchType } from "./db/schema";
-import cheerio from "cheerio";
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { saveToDb } from "./lib/utils";
+import scrapeTipsport from "./scraping/tipsport";
+import type { Match } from "./types";
 
 const app = express();
 
@@ -11,82 +10,14 @@ app.use(express.json());
 
 puppeteer.use(StealthPlugin());
 
+// global array to store all maches
+const matches: Match[] = [];
+
 app.get("/live/tipsport", async (req, res) => {
-  try {
-    const matches: MatchType[] = [];
-
-    const browser = await puppeteer.launch({ headless: false });
-    const page = await browser.newPage();
-
-    await page.goto("https://www.tipsport.sk/live", {
-      waitUntil: "networkidle2",
-    });
-    const tabs = await page.$$(
-      ".LiveOverviewSportTabstyled__SportTab-sc-805zbr-0",
-    );
-
-    async function scrapeData() {
-      const content = await page.content(); // get the HTML content
-
-      const $ = cheerio.load(content);
-
-      // Select all match rows
-      $(".LiveOverviewMatchstyled__MatchRow-sc-oy8wyv-1").each((_, element) => {
-        const bookmaker = "tipsport";
-
-        const teamsText = $(element)
-          .find(".LiveOverviewMatchstyled__MatchName-sc-oy8wyv-4 span")
-          .text();
-        const [team1, team2] = teamsText.split(" - ");
-        if (!team1 || !team2) return;
-
-        const odds = [] as string[];
-        $(element)
-          .find(
-            ".LiveOverviewMatchCellsstyled__InsidePaddRow-sc-zro7iv-0.grUyBm",
-          )
-          .each((_, oddCell) => {
-            $(oddCell)
-              .children(".BetButtonstyled__BetButton-sc-1tviux5-0")
-              .find("span:nth-child(2)")
-              .each((_, odd) => {
-                const text = $(odd).text();
-                if (!text) odds.push("null");
-                else odds.push(text);
-              });
-          });
-
-        const match: MatchType = {
-          bookmaker,
-          team1,
-          team2,
-          odds1: Number(odds[0]) || null,
-          oddsTie: Number(odds[1]) || null,
-          odds2: Number(odds[2]) || null,
-        };
-
-        if (match.oddsTie || match.odds1 || match.odds1) matches.push(match);
-      });
-    }
-
-    for (const tab of tabs) {
-      await tab.click();
-      await new Promise((resolve) => setTimeout(resolve, 500)); // NOTE: tweak this to find the fastest time
-      await scrapeData();
-    }
-    await browser.close();
-
-    res.status(200).json({ message: "Scraped successfully", data: matches });
-
-    await saveToDb(matches);
-  } catch (error) {
-    console.log(error);
-    if (error instanceof Error) {
-      res.status(500).json({ error });
-    } else {
-      res.status(500).json({ error: "An error occurred" });
-    }
-  }
+  const data = await scrapeTipsport(matches);
+  if (data.error) return res.status(500).send(data.error);
+  res.status(200).json(data);
+  console.log("local matches", matches);
 });
 
 const port = 6969;

@@ -1,6 +1,12 @@
 import { connectToDb } from "../db";
 import { Match, type MatchType } from "../db/schema";
 
+export function cleanTeamName(teamName: string) {
+  const pattern = new RegExp("\\sUd{2}|\\(.*?\\)|\\/.*|\\b\\p{Any}$", "gu");
+
+  return teamName.replaceAll(pattern, "").trim().toLowerCase();
+}
+
 export async function saveToDb(matches: MatchType[]) {
   try {
     await connectToDb();

@@ -1,14 +1,10 @@
-import mongoose, { type InferSchemaType } from "mongoose";
+import { pgTable, uuid, varchar, vector } from "drizzle-orm/pg-core";
 
-const matchSchema = new mongoose.Schema({
-  bookmaker: { type: String, required: true },
-  team1: { type: String, required: true },
-  team2: { type: String, required: true },
-  odds1: { type: Number },
-  odds2: { type: Number },
-  oddsTie: { type: Number },
+export const embeddedTeams = pgTable("embedded_teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name").notNull().unique(),
+  embedding: vector("embedding", { dimensions: 1536 }).notNull(),
 });
 
-export type MatchType = InferSchemaType<typeof matchSchema>;
-
-export const Match = mongoose.model<MatchType>("odds", matchSchema);
+export type embeddedTeam = typeof embeddedTeams.$inferSelect;
+export type embeddedTeamInsert = typeof embeddedTeams.$inferInsert;

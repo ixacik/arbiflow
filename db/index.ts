@@ -1,9 +1,11 @@
-import mongoose from "mongoose";
+import { drizzle } from "drizzle-orm/node-postgres";
+import * as schema from "./schema";
+import "dotenv/config";
+import { Client } from "pg";
 
-export async function connectToDb() {
-  try {
-    await mongoose.connect(process.env.DATABASE_URL!);
-  } catch (error) {
-    console.log(error);
-  }
-}
+const client = new Client({
+  connectionString: process.env.DATABASE_URL!,
+});
+
+await client.connect();
+export const db = drizzle(client, { schema });
